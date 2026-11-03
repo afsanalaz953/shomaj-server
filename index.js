@@ -2,7 +2,7 @@ import 'dotenv/config'
 import express from 'express';
 import cors from 'cors';
 import { MongoClient } from 'mongodb';
-
+import { ObjectId } from 'mongodb';
 
 const app = express();
 app.use(express.json());
@@ -39,7 +39,7 @@ app.post('/create', async(req, res)=> {
 })
 // 2)create end
 
-app.get('/upcomming', async(req, res) => {
+app.get('/upcoming', async(req, res) => {
 const result= await allEventsCollections.find().sort({ _id: -1 }).toArray()
 res.json(result);
 console.log( "AllEvents in server", result)
@@ -51,6 +51,30 @@ res.json(result);
  })
 
 // 3)upcomming end
+
+
+// DetailsEvents
+app.get('/upcoming/:id', async(req,res) =>{
+  const {id} =req.params;
+  const result = await allEventsCollections.findOne({_id:new ObjectId(id)})
+//  console.log(id, 'id')
+  res.send(result)
+})
+
+// Joined page
+
+
+// Manage page
+ app.get('/manage/:userId', async(req, res) => {
+   const {userId} = req.params;
+   console.log(userId,"userId for my-event")
+
+const result= await allEventsCollections.find({userId:userId}).toArray()
+res.send(result);
+ })
+
+
+
 // oldEvents for Gallery
  app.get('/gallery', async(req, res) =>{
 const result = await oldEventsCollections.find().toArray()
