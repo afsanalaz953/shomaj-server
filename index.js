@@ -72,7 +72,14 @@ app.get('/upcoming/:id', async(req,res) =>{
 const result= await allEventsCollections.find({userId:userId}).toArray()
 res.send(result);
  })
+// for deleted
+app.delete("/manage/:userId", async(req, res) =>{
+const {userId } = req.params;
+ const result = await  allEventsCollections.deleteOne({_id:new ObjectId(userId)});
 
+res.json(result)
+
+});
 
 
 // oldEvents for Gallery
@@ -81,8 +88,6 @@ const result = await oldEventsCollections.find().toArray()
 res.json(result);
  })
 // oldEvents for Gallery
-
-
 
 
 
