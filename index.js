@@ -117,12 +117,60 @@ app.get('/upcoming/:id', async(req,res) =>{
 
 // Joined page
 // backend a joined info phathano
-app.post('/joined', async(req, res)=> {
-  const joinedData = req.body
-  const result = await joinedCollections.insertOne(joinedData)
-  console.log("serverjoineddata", result)
-  res.send({message: "joined api working"})
-})
+// app.post('/joined', async(req, res)=> {
+//   const joinedData = req.body
+//   const result = await joinedCollections.insertOne(joinedData)
+//   console.log("serverjoineddata", result)
+//   res.send({message: "joined api working"})
+// })
+//  app.get('/joined/:userId', async(req, res) => {
+//    const {userId} = req.params;
+//    console.log(userId,"userId for joined")
+
+// const result= await joinedCollections.find({userId:userId}).toArray()
+// res.send(result);
+//  })
+app.post('/joined', async (req, res) => {
+  try {
+    // const joinedData = req.body;
+     const { _id, ...joinedData } = req.body;
+    const { userId, eventId } = joinedData;
+
+    if (!userId || !eventId) {
+      return res.status(400).send({ message: 'userId and eventId are required' });
+    }
+
+    // 🔍 আগেই join করা কিনা চেক
+    const already = await joinedCollections.findOne({ userId, eventId });
+    if (already) {
+      return res.status(409).send({
+        message: 'You have already joined this event',
+        alreadyJoined: true,
+      });
+    }
+
+    const result = await joinedCollections.insertOne({
+      ...joinedData,
+      joinedAt: joinedData.joinedAt ?? new Date().toISOString(),
+    });
+
+    console.log('serverjoineddata', result);
+    return res.send({
+      message: 'joined api working',
+      insertedId: result.insertedId,
+    });
+  } catch (err) {
+    // 🛡️ race condition হলে unique index duplicate key দেবে
+    if (err?.code === 11000) {
+      return res.status(409).send({
+        message: 'You have already joined this event',
+        alreadyJoined: true,
+      });
+    }
+    console.error('POST /joined error', err);
+    return res.status(500).send({ message: 'Server error' });
+  }
+});
  app.get('/joined/:userId', async(req, res) => {
    const {userId} = req.params;
    console.log(userId,"userId for joined")
