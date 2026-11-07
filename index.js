@@ -3,6 +3,10 @@ import express from 'express';
 import cors from 'cors';
 import { MongoClient } from 'mongodb';
 import { ObjectId } from 'mongodb';
+// import { createLocalJWKSet } from 'jose';
+// const { createRemoteJWKSet,  createLocalJWKSet } = ('jose-cjs');
+// const { jwtVerify } = ('jose-cjs');
+import { createRemoteJWKSet, jwtVerify } from 'jose';
 
 const app = express();
 app.use(express.json());
@@ -19,7 +23,45 @@ export async function connectToMongoDB() {
     console.dir(err);
   }
 }
- 
+
+
+// verify Token
+ const verifyToken = async(req, res, next) =>{
+  const authHeader= req?.headers.authorization
+  
+    if(!authHeader){
+    return res.status(401).json({message:
+    "Unauthorized"
+    });
+  }
+   console.log (authHeader, "auth")
+ const token = authHeader.split(" ")[1];
+  console.log(token)
+ if(!token){
+    return res.status(401).json({message:
+       "Unauthorized"
+    });
+ }
+ // verification by JWKS
+const JWKS = createRemoteJWKSet(
+ new URL(`${process.env.CLIENT_URL}/api/auth/jwks`)
+  )
+// // payload in try catch
+ try {
+  
+    // const JWKS = await getJWKS();   // <---- এই লাইনটি বসবে
+ const { payload } = await jwtVerify(token, JWKS) 
+   console.log(payload, "payload");
+     next()
+  } catch (error) {
+     console.log(error);
+     return res.status(403).json({message:
+      "Forbidden"
+      });
+  }
+ };
+//  verification end
+
 const mongoClient = await connectToMongoDB()
 const db = mongoClient.db("project-express")
  const allEventsCollections = db.collection("allEvents");
@@ -31,7 +73,7 @@ app.get('/', (req, res) => {
 })
 // upcomming events
 // 1)For create
-app.post('/create', async(req, res)=> {
+app.post('/create', verifyToken, async(req, res)=> {
   const createData = req.body
   const result = await allEventsCollections.insertOne(createData)
   console.log("servercreatedata", result)
@@ -130,7 +172,7 @@ app.get('/upcoming/:id', async(req,res) =>{
 // const result= await joinedCollections.find({userId:userId}).toArray()
 // res.send(result);
 //  })
-app.post('/joined', async (req, res) => {
+app.post('/joined',  async (req, res) => {
   try {
     // const joinedData = req.body;
      const { _id, ...joinedData } = req.body;
@@ -171,7 +213,7 @@ app.post('/joined', async (req, res) => {
     return res.status(500).send({ message: 'Server error' });
   }
 });
- app.get('/joined/:userId', async(req, res) => {
+ app.get('/joined/:userId', verifyToken, async(req, res) => {
    const {userId} = req.params;
    console.log(userId,"userId for joined")
 
@@ -180,7 +222,7 @@ res.send(result);
  })
 
 // Manage page
- app.get('/manage/:userId', async(req, res) => {
+ app.get('/manage/:userId', verifyToken, async(req, res) => {
    const {userId} = req.params;
    console.log(userId,"userId for my-event")
 
