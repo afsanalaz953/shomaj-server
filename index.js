@@ -153,8 +153,13 @@ app.get('/upcoming', async (req, res) => {
 app.get('/upcoming/:id', async(req,res) =>{
   const {id} =req.params;
   const result = await allEventsCollections.findOne({_id:new ObjectId(id)})
-//  console.log(id, 'id')
-  res.send(result)
+ console.log(id, 'eventid')
+// newly added
+if (!result) {
+  return res.status(404).json({ error: 'Event not found' });  // ⭐ এটা দিন
+}
+  // res.json(result)
+  res.status(200).json(result);
 })
 
 // Joined page
@@ -220,6 +225,22 @@ app.post('/joined',  async (req, res) => {
 const result= await joinedCollections.find({userId:userId}).toArray()
 res.send(result);
  })
+//  for joined idpage
+app.get('/joined/:userId', verifyToken, async(req, res) => {
+   const {userId} = req.params;
+   console.log(userId,"userId for already joined")
+
+const result= await joinedCollections.find({userId:userId}).toArray()
+
+
+ console.log(userId, 'alreadyjoinedid')
+// newly added
+if (!result) {
+  return res.status(404).json({ error: 'Event not found' });  // ⭐ এটা দিন
+}
+  // res.json(result)
+  res.status(200).json(result);
+})
 
 // Manage page
  app.get('/manage/:userId', verifyToken, async(req, res) => {
@@ -261,4 +282,5 @@ res.json(result);
 
 app.listen(PORT, () => {
   console.log(`server is running on port ${PORT}`)
-})
+});
+export default app;
